@@ -1,24 +1,52 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, ThumbsUp, ThumbsDown } from 'lucide-react'
-import Header from './header'
+import Header from '@/components/header'
+import { addMessage } from '@/auth/actions';
+import { RootState } from '@/redux/store';
+import { ChatbotService } from '@/lib/utils'
 
 export default function ChatbotInterface() {
-  const [messages, setMessages] = useState([
-    { role: 'ai', content: 'Hello! How can I assist you today?' },
-  ])
+  const messages = useSelector((state: RootState) => state.auth.messages);
+  const dispatch = useDispatch();
+  
+  useEffect(() => {
+    // Fetch initial messages from backend (as this is out of scope, not implementing this)
+    // ...
+  }, [dispatch]);
+
   const [input, setInput] = useState('')
 
-  const handleSend = () => {
+  const chatbotService = new ChatbotService();
+
+  const handleSend = async () => {
     if (input.trim()) {
-      setMessages([...messages, { role: 'user', content: input }])
-      setInput('')
-      // Here you would typically send the message to your AI backend
-      // and then add the AI's response to the messages
+      // Update messages with user input
+      dispatch(addMessage({ role: 'user', content: input }));
+      setInput('');
+
+      try {
+        // Send the message to the backend asynchronously
+        const response = await chatbotService.sendMessage(input);
+
+        // Process the response and update messages
+        const processedResponse = processApiResponse(response);
+        dispatch(addMessage({ role: 'ai', content: processedResponse }));
+      } catch (error) {
+        console.error('Error sending message:', error);
+        // Handle potential errors (e.g., display an error message to the user)
+      }
     }
-  }
+  };
+
+  const processApiResponse = (response: string): string => {
+    // Implement your logic to process the AI's response
+    // (e.g., parse JSON, format the text, etc.)
+    return response; // Modify this based on your backend response structure
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground w-full">
